@@ -1,11 +1,15 @@
 #include "SnakeGameQt.h"
+#include <QLabel>
+#include <QPixmap>
+#include <random>
 
-SnakeGameQt::SnakeGameQt(QWidget *parent)
+SnakeGameQt::SnakeGameQt(QWidget* parent)
 	: QWidget(parent)
 {
 	setFixedSize(680, 680);
 	m_GridLayout = new QGridLayout(this);
 	InitGrid();
+	InitSnake();
 
 	setLayout(m_GridLayout);
 }
@@ -27,8 +31,27 @@ void SnakeGameQt::InitGrid()
 				w->setStyleSheet("background-color: #A7D948");
 			else
 				w->setStyleSheet("background-color: #8ECC39");
-			
+
 			m_GridLayout->addWidget(w, j, i);
 		}
 	}
+}
+
+void SnakeGameQt::InitSnake()
+{
+	std::default_random_engine generator;
+	std::uniform_int_distribution<int> distribution(0, 17);
+
+	struct snakeCordonate actualPos;
+	struct snakeCordonate oldPos;
+
+	actualPos.posX = distribution(generator);
+	actualPos.posY = distribution(generator);
+	oldPos.posX = -1;
+	oldPos.posY = -1;
+
+	QLabel* snakeLabel = new QLabel(this);
+	QPixmap* snakePicture = new QPixmap("Assets/Snake/snakePicture.png");
+	snakeLabel->setPixmap(*snakePicture);
+	m_GridLayout->addWidget(snakeLabel, actualPos.posX, actualPos.posY);
 }

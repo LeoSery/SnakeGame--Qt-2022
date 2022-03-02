@@ -5,11 +5,14 @@
 
 class SnakeGameQt : public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    SnakeGameQt(QWidget *parent = Q_NULLPTR);
-private: 
-    void InitGrid();
-    QGridLayout* m_GridLayout;
+	SnakeGameQt(QWidget* parent = Q_NULLPTR);
+private:
+	void InitGrid();
+	void InitSnake();
+	QGridLayout* m_GridLayout;
+
+	struct snakeCordonate { int posX; int posY; };
 };
