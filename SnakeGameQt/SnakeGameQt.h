@@ -1,7 +1,10 @@
 #pragma once
 
-#include <QtWidgets/QMainWindow>
+#include <QtWidgets/QWidget>
 #include <QGridLayout>
+#include <QWidget>
+#include <QLabel>
+#include <QPixmap>
 
 class SnakeGameQt : public QWidget
 {
@@ -9,10 +12,21 @@ class SnakeGameQt : public QWidget
 
 public:
 	SnakeGameQt(QWidget* parent = Q_NULLPTR);
+	~SnakeGameQt();
+protected:
+	void keyPressEvent(QKeyEvent* event);
+
+	struct snakeCordonate { int posX = -1; int posY = -1; };
+	enum class Direction { Up, Left, Down, Right, };
 private:
 	void InitGrid();
 	void InitSnake();
-	QGridLayout* m_GridLayout;
+	void Move(const Direction&);
 
-	struct snakeCordonate { int posX; int posY; };
+	snakeCordonate m_actualPos;
+	snakeCordonate m_oldPos;
+	QGridLayout* m_gridLayout;
+	QPixmap* m_snakePicture;
+
+	static constexpr size_t GridSize = 18;
 };
