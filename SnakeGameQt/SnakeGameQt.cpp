@@ -1,8 +1,17 @@
 #include <QApplication>
 #include <QKeyEvent>
-#include <random>
+#include <chrono>
 
 #include "SnakeGameQt.h"
+
+void onMove(SnakeGameQt* t)
+{
+	while (true)
+	{
+		t->MoveDirection(t->LastKeyPressed);
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
+}
 
 SnakeGameQt::SnakeGameQt(QWidget* parent) : QWidget(parent)
 {
@@ -11,9 +20,20 @@ SnakeGameQt::SnakeGameQt(QWidget* parent) : QWidget(parent)
 	m_gridLayout = new QGridLayout(this);
 	m_snakePicture = new QPixmap("Assets/Snake/snakePicture.png");
 
+	for (int i = 0; i < 11; i++)
+	{
+		m_fruitsArray[i] = new QPixmap(std::string("Assets/Food/" + std::to_string(i) + ".png").c_str());
+	}
+
+	m_generator = *(new std::default_random_engine());
+	m_distribution = *(new std::uniform_int_distribution<unsigned int>(1, GridSize));
+
 	InitGrid();
 	InitSnake();
+	InitFood();
 	setLayout(m_gridLayout);
+
+	th = std::thread(&onMove, this);
 }
 
 SnakeGameQt::~SnakeGameQt()
@@ -31,16 +51,28 @@ void SnakeGameQt::keyPressEvent(QKeyEvent* event)
 	switch (event->key())
 	{
 	case Qt::Key_Up:
-		Move(Direction::Up);
+		LastKeyPressed = Direction::Up;
 		break;
 	case Qt::Key_Left:
-		Move(Direction::Left);
+		LastKeyPressed = Direction::Left;
 		break;
 	case Qt::Key_Down:
-		Move(Direction::Down);
+		LastKeyPressed = Direction::Down;
 		break;
 	case Qt::Key_Right:
-		Move(Direction::Right);
+		LastKeyPressed = Direction::Right;
+		break;
+	case Qt::Key_Z:
+		LastKeyPressed = Direction::Up;
+		break;
+	case Qt::Key_Q:
+		LastKeyPressed = Direction::Left;
+		break;
+	case Qt::Key_S:
+		LastKeyPressed = Direction::Down;
+		break;
+	case Qt::Key_D:
+		LastKeyPressed = Direction::Right;
 		break;
 	}
 	repaint();
@@ -71,35 +103,59 @@ void SnakeGameQt::InitGrid()
 
 void SnakeGameQt::InitSnake()
 {
-	std::default_random_engine generator(static_cast<unsigned int>(time(0)));
-	std::uniform_int_distribution<int> distribution(1, GridSize);
+	m_snakeActualPos.posX = m_distribution(m_generator);
+	m_snakeActualPos.posY = m_distribution(m_generator);
 
-	m_actualPos.posX = distribution(generator);
-	m_actualPos.posY = distribution(generator);
-
-	qobject_cast<QLabel*>(m_gridLayout->itemAtPosition(m_actualPos.posX, m_actualPos.posY)->widget())->setPixmap(*m_snakePicture);
+	qobject_cast<QLabel*>(m_gridLayout->itemAtPosition(m_snakeActualPos.posX, m_snakeActualPos.posY)->widget())->setPixmap(*m_snakePicture);
 }
 
-void SnakeGameQt::Move(const Direction& side)
+void SnakeGameQt::InitFood()
 {
-	qobject_cast<QLabel*>(m_gridLayout->itemAtPosition(m_actualPos.posX, m_actualPos.posY)->widget())->clear();
-	m_oldPos = m_actualPos;
+	m_foodActualPos.posX = m_distribution(m_generator);
+	m_foodActualPos.posY = m_distribution(m_generator);
+
+	if (m_foodActualPos.posX != m_snakeActualPos.posX || m_foodActualPos.posY != m_snakeActualPos.posY)
+		qobject_cast<QLabel*>(m_gridLayout->itemAtPosition(m_foodActualPos.posX, m_foodActualPos.posY)->widget())->setPixmap(*m_fruitsArray[m_distribution(m_generator) % 11]);
+	else
+		InitFood();
+}
+
+void SnakeGameQt::MoveDirection(const Direction& side)
+{
+	qobject_cast<QLabel*>(m_gridLayout->itemAtPosition(m_snakeActualPos.posX, m_snakeActualPos.posY)->widget())->clear();
+	m_snakeOldPos = m_snakeActualPos;
 
 	switch (side)
 	{
 	case Direction::Up:
-		if (m_actualPos.posX == 1) m_actualPos.posX = GridSize; else m_actualPos.posX--;
+		if (m_snakeActualPos.posX == 1) m_snakeActualPos.posX = GridSize; else m_snakeActualPos.posX--;
 		break;
 	case Direction::Left:
-		if (m_actualPos.posY == 1) m_actualPos.posY = GridSize; else m_actualPos.posY--;
+		if (m_snakeActualPos.posY == 1) m_snakeActualPos.posY = GridSize; else m_snakeActualPos.posY--;
 		break;
 	case Direction::Down:
-		if (m_actualPos.posX == 18) m_actualPos.posX = 1; else m_actualPos.posX++;
+		if (m_snakeActualPos.posX == 18) m_snakeActualPos.posX = 1; else m_snakeActualPos.posX++;
 		break;
 	case Direction::Right:
-		if (m_actualPos.posY == 18) m_actualPos.posY = 1; else m_actualPos.posY++;
+		if (m_snakeActualPos.posY == 18) m_snakeActualPos.posY = 1; else m_snakeActualPos.posY++;
 		break;
 	}
+	checkFood();
 
-	qobject_cast<QLabel*>(m_gridLayout->itemAtPosition(m_actualPos.posX, m_actualPos.posY)->widget())->setPixmap(*m_snakePicture);
+	qobject_cast<QLabel*>(m_gridLayout->itemAtPosition(m_snakeActualPos.posX, m_snakeActualPos.posY)->widget())->setPixmap(*m_snakePicture);
 }
+
+void SnakeGameQt::checkFood()
+{
+	if (m_snakeActualPos.posX == m_foodActualPos.posX && m_snakeActualPos.posY == m_foodActualPos.posY)
+	{
+		score++;
+		//checkSnake();
+		InitFood();
+	}
+}
+
+//void SnakeGameQt::checkSnake()
+//{
+//
+//}
